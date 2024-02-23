@@ -26,6 +26,7 @@ class AnalyzeModuleGraph {
         val heightGraph = graphUntangler.heightGraph(graph, nodeStatistics.nodes)
         val subgraphs = graphUntangler.analyzeSubgraphs(graph)
         val isolatedSubgraphs = graphUntangler.isolateSubgraphs(graph)
+        val affectedSubgraphs = graphUntangler.affectedSubgraphs(graph)
 
         // Clean
         outputs.projectsDir.deleteRecursively()
@@ -51,6 +52,6 @@ class AnalyzeModuleGraph {
         CoOccurrenceMatrixWriter(outputs.outputAdjacencyMatrix).write(graph)
         SubgraphSizeWriter(outputs.outputIsolatedSubgraphSize).write(isolatedSubgraphs)
         SubgraphsDependantsWriter(outputs.projectsDir).write(subgraphs)
-        SubgraphWriter(outputs.projectsDir).write(subgraphs, isolatedSubgraphs)
+        SubgraphWriter(outputs.projectsDir).write(subgraphs, isolatedSubgraphs, affectedSubgraphs)
     }
 }

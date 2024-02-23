@@ -116,6 +116,7 @@ abstract class AnalyzeModuleGraphTask : DefaultTask() {
             project.configurations
                 .filter { configurationsToAnalyze.contains(it.name) }
                 .flatMap { configuration ->
+                    println("configuration.name ${configuration.name}")
                     configuration.dependencies.filterIsInstance<ProjectDependency>()
                         .map { Triple(project, it.dependencyProject, configuration.name) }
                 }

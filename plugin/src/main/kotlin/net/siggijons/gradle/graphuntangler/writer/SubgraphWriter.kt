@@ -1,6 +1,7 @@
 package net.siggijons.gradle.graphuntangler.writer
 
 import net.siggijons.gradle.graphuntangler.color.ColorMode
+import net.siggijons.gradle.graphuntangler.graph.AffectedSubgraphDetails
 import net.siggijons.gradle.graphuntangler.graph.IsolatedSubgraphDetails
 import net.siggijons.gradle.graphuntangler.graph.SubgraphDetails
 import java.io.File
@@ -12,10 +13,12 @@ class SubgraphWriter(
 
     fun write(
         subgraphs: List<SubgraphDetails>,
-        isolatedSubgraphs: List<IsolatedSubgraphDetails>
+        isolatedSubgraphs: List<IsolatedSubgraphDetails>,
+        affectedSubgraphs: List<AffectedSubgraphDetails>
     ) {
         writeProjectSubgraphs(subgraphs, projectsDir)
         writeIsolatedSubgraphs(isolatedSubgraphs, projectsDir)
+        writeAffectedSubgraphs(affectedSubgraphs, projectsDir)
     }
 
     private fun writeProjectSubgraphs(
@@ -51,6 +54,25 @@ class SubgraphWriter(
             graphvizWriter.writeDotGraph(
                 graph = details.reducedDag,
                 file = File(outputDir, "${details.vertex.safeFileName}-isolated-reduced.gv"),
+                colorMode = ColorMode.OWNER
+            )
+        }
+    }
+
+    private fun writeAffectedSubgraphs(
+        graphs: List<AffectedSubgraphDetails>,
+        outputDir: File
+    ) {
+        graphs.forEach { details ->
+            graphvizWriter.writeDotGraph(
+                graph = details.affectedDag,
+                file = File(outputDir, "${details.vertex.safeFileName}-affected.gv"),
+                colorMode = ColorMode.OWNER
+            )
+
+            graphvizWriter.writeDotGraph(
+                graph = details.reducedDag,
+                file = File(outputDir, "${details.vertex.safeFileName}-affected-reduced.gv"),
                 colorMode = ColorMode.OWNER
             )
         }

@@ -6,6 +6,7 @@ import org.jgrapht.alg.scoring.BetweennessCentrality
 import org.jgrapht.graph.AbstractGraph
 import org.jgrapht.graph.AsSubgraph
 import org.jgrapht.graph.DirectedAcyclicGraph
+import org.jgrapht.graph.builder.AbstractGraphBuilder
 import org.jgrapht.traverse.TopologicalOrderIterator
 
 class GraphUntangler {
@@ -166,6 +167,60 @@ class GraphUntangler {
                 isolatedDag = isolatedDag,
                 reducedDag = reducedDag,
                 isolatedDagSize = isolatedDag.vertexSet().size,
+                fullGraphSize = graph.vertexSet().size
+            )
+        }
+    }
+
+    fun affectedSubgraphs(
+        graph: DirectedAcyclicGraph<DependencyNode, DependencyEdge>
+    ): List<AffectedSubgraphDetails> {
+        return graph.vertexSet().map { node ->
+            val ancestors = graph.getAncestors(node)
+            val descendants = graph.getDescendants(node)
+
+            val builder = DirectedAcyclicGraph.createBuilder<DependencyNode, DependencyEdge>(
+                DependencyEdge::class.java
+            ).addGraph(graph)
+
+            val disconnected = graph.vertexSet() - ancestors - descendants - node
+            disconnected.forEach { builder.removeVertex(it) }
+
+            val isolatedDag = builder.build()
+
+            val affectedBuilder = DirectedAcyclicGraph.createBuilder<DependencyNode, DependencyEdge>(
+                DependencyEdge::class.java
+            ).addGraph(isolatedDag)
+
+            // Check if there's edges from ancestor to current
+            println("Evaluating affected for ${node.project}")
+            isolatedDag.vertexSet().forEach {
+                val edgeFromAncestorToCurrent = isolatedDag.getEdge(it, node)
+                val edgeFromCurrentToDescendant = isolatedDag.getEdge(node, it)
+                if (edgeFromAncestorToCurrent == null && edgeFromCurrentToDescendant == null && node.project != it.project) {
+                    println("REMOVING: ${it.project}")
+                    affectedBuilder.removeVertex(it)
+                } else {
+                    if (edgeFromAncestorToCurrent != null) {
+                        println("EDGE: ${it.project} -> ${node.project}")
+                    }
+                    if (edgeFromCurrentToDescendant != null) {
+                        println("EDGE: ${node.project} -> ${it.project}")
+                    }
+                }
+            }
+
+            val affectedDag = affectedBuilder.build()
+
+            @Suppress("UNCHECKED_CAST")
+            val reducedDag = affectedDag.clone() as AbstractGraph<DependencyNode, DependencyEdge>
+            TransitiveReduction.INSTANCE.reduce(reducedDag)
+
+            AffectedSubgraphDetails(
+                vertex = node,
+                affectedDag = affectedDag,
+                reducedDag = reducedDag,
+                affectedDagSize = affectedDag.vertexSet().size,
                 fullGraphSize = graph.vertexSet().size
             )
         }
